@@ -14,6 +14,7 @@
 		840FAD912244C35B005F9EAA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 840FAD902244C35B005F9EAA /* Assets.xcassets */; };
 		840FAD942244C35B005F9EAA /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 840FAD922244C35B005F9EAA /* LaunchScreen.storyboard */; };
 		84A9901322467DAB00C47C9E /* DropablePin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84A9901222467DAB00C47C9E /* DropablePin.swift */; };
+		84C02D122247F78B00A19452 /* PhotoCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84C02D112247F78B00A19452 /* PhotoCell.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,6 +28,7 @@
 		840FAD932244C35B005F9EAA /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		840FAD952244C35B005F9EAA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		84A9901222467DAB00C47C9E /* DropablePin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DropablePin.swift; sourceTree = "<group>"; };
+		84C02D112247F78B00A19452 /* PhotoCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoCell.swift; sourceTree = "<group>"; };
 		8BBFB5D1209F570941D3A7D8 /* Pods-PixelCity.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PixelCity.debug.xcconfig"; path = "Target Support Files/Pods-PixelCity/Pods-PixelCity.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -97,6 +99,7 @@
 			isa = PBXGroup;
 			children = (
 				84A9901222467DAB00C47C9E /* DropablePin.swift */,
+				84C02D112247F78B00A19452 /* PhotoCell.swift */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -253,6 +256,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				84C02D122247F78B00A19452 /* PhotoCell.swift in Sources */,
 				840FAD8C2244C358005F9EAA /* MapVC.swift in Sources */,
 				84A9901322467DAB00C47C9E /* DropablePin.swift in Sources */,
 				840FAD8A2244C358005F9EAA /* AppDelegate.swift in Sources */,
