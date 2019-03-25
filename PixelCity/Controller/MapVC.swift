@@ -22,7 +22,8 @@ class MapVC: UIViewController ,UIGestureRecognizerDelegate{
     var progressLabel:UILabel?
     var collectionV:UICollectionView?
     var flowlayout = UICollectionViewFlowLayout()
-    var urlImage = [String]()
+    var urlImages = [String]()
+    var imagesDownload = [UIImage]()
     
     //MARK:- IBActions
     @IBAction func locationBtnPressed(_ sender:Any){
@@ -75,16 +76,31 @@ class MapVC: UIViewController ,UIGestureRecognizerDelegate{
         removePin()
         removeSpinner()
         removeProgessLabel()
+        CancellAllSession()
+        imagesDownload = []
+        urlImages = []
+        collectionV?.reloadData()
         pullUPPhotoView()
         addSpinner()
         addProgressBarLabel()
+        
         let touchPoint = sender.location(in: map)
         let touchCordinate = map.convert(touchPoint, toCoordinateFrom: map)
         let annotation = DropablePin(coordinate: touchCordinate, identifier: "dropAnotation")
         map.addAnnotation(annotation)
         
-        retriveURLS(forAnnotation: annotation) { (true) in
-            print(self.urlImage)
+        retriveURLS(forAnnotation: annotation) { (finshed) in
+            if (finshed)
+            {
+                self.retriveImages(handler: { (finshed) in
+                    if (finshed){
+                        self.removeSpinner()
+                        self.removeProgessLabel()
+                        self.collectionV?.reloadData()
+                    }
+                })
+            }
+            
         }
         let coordinateRegion = MKCoordinateRegion(center: touchCordinate, latitudinalMeters: regionRadius, longitudinalMeters: regionRadius)
         map.setRegion(coordinateRegion, animated: true)
@@ -95,9 +111,10 @@ class MapVC: UIViewController ,UIGestureRecognizerDelegate{
             map.removeAnnotation(annotation)
         }}
     
+    ///MARK:-Work with Alamofire
+    
     ///func to retive url
     func retriveURLS(forAnnotation annotation :DropablePin , handler:@escaping (_ status:Bool)->()){
-        urlImage = []
         Alamofire.request(getUrl(forApiKey: API_KEY, AndAnnotation: annotation, AndPageNumber: 40)).responseJSON { (response) in
             guard let json = response.result.value as? Dictionary<String,AnyObject> else {return}
             let photos = json["photos"] as? Dictionary<String,AnyObject>
@@ -105,10 +122,35 @@ class MapVC: UIViewController ,UIGestureRecognizerDelegate{
             for item in photoArray!{
                 //http://farm8.staticflickr.com/7804/47459692401_274df06c59_z.jpg
                 let oneUrl = "https://farm\(item["farm"]!).staticflickr.com/\(item["server"]!)/\(item["id"]!)_\(item["secret"]!)_z.jpg"
-                self.urlImage.append(oneUrl)
+                self.urlImages.append(oneUrl)
                 handler(true)
             }
 
+        }
+    }
+    
+    
+    func retriveImages(handler:@escaping (_ status:Bool)->() ){
+        for urlImage in urlImages{
+            Alamofire.request(urlImage).responseImage { (response) in
+                guard let image = response.result.value else {return }
+                self.imagesDownload.append(image)
+                self.progressLabel?.text = "\(self.imagesDownload.count)/40 images Downloaded"
+
+                if self.imagesDownload.count == self.urlImages.count {
+                    handler(true)
+                }
+            }
+        }
+        
+    }
+    
+    func CancellAllSession()
+    {
+        Alamofire.SessionManager.default.session.getTasksWithCompletionHandler { (sessionData, uploadData, downloadData) in
+            sessionData.forEach({$0.cancel()})
+            uploadData.forEach({$0.cancel()})
+            downloadData.forEach({$0.cancel()})
         }
     }
     
@@ -154,6 +196,8 @@ extension MapVC:MKMapViewDelegate{
     }
     
     @objc func pullDownPhotoView(){
+        CancellAllSession()
+        collectionV?.reloadData()
         pulledViewHeightConstraint.constant = 1
         self.view.layoutIfNeeded()
     }
@@ -187,7 +231,7 @@ extension MapVC:MKMapViewDelegate{
         progressLabel?.center = CGPoint(x:x,y:y + 30)
         progressLabel?.textAlignment = .center
         progressLabel?.font = UIFont(name: "Avera Next", size: 22)
-        progressLabel?.text = "12/24 photos loaded"
+        progressLabel?.text = ""
         collectionV?.addSubview(progressLabel!)
     }
     func removeProgessLabel(){
@@ -230,12 +274,16 @@ extension MapVC:UICollectionViewDelegate,UICollectionViewDataSource{
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return 4
+        return imagesDownload.count
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "photoCell", for: indexPath) as? PhotoCell
-        return cell!
+        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "photoCell", for: indexPath) as? PhotoCell else {
+            return PhotoCell()
+        }
+        let imageToCell = UIImageView(image: imagesDownload[indexPath.row])
+        cell.addSubview(imageToCell)
+        return cell
     }
     
 }
