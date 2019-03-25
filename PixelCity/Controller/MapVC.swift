@@ -9,6 +9,8 @@
 import UIKit
 import MapKit
 import CoreLocation
+import Alamofire
+import AlamofireImage
 
 class MapVC: UIViewController ,UIGestureRecognizerDelegate{
     //MARK:- OutLets
@@ -20,6 +22,7 @@ class MapVC: UIViewController ,UIGestureRecognizerDelegate{
     var progressLabel:UILabel?
     var collectionV:UICollectionView?
     var flowlayout = UICollectionViewFlowLayout()
+    var urlImage = [String]()
     
     //MARK:- IBActions
     @IBAction func locationBtnPressed(_ sender:Any){
@@ -46,8 +49,8 @@ class MapVC: UIViewController ,UIGestureRecognizerDelegate{
         collectionV?.register(PhotoCell.self, forCellWithReuseIdentifier: "photoCell")
         collectionV?.delegate = self
         collectionV?.dataSource = self
-        collectionV?.backgroundColor = #colorLiteral(red: 0.4666666687, green: 0.7647058964, blue: 0.2666666806, alpha: 1)
-        //pulledView.addSubview(collectionV!)
+       collectionV?.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+        pulledView.addSubview(collectionV!)
         
     }
     
@@ -79,6 +82,10 @@ class MapVC: UIViewController ,UIGestureRecognizerDelegate{
         let touchCordinate = map.convert(touchPoint, toCoordinateFrom: map)
         let annotation = DropablePin(coordinate: touchCordinate, identifier: "dropAnotation")
         map.addAnnotation(annotation)
+        
+        retriveURLS(forAnnotation: annotation) { (true) in
+            print(self.urlImage)
+        }
         let coordinateRegion = MKCoordinateRegion(center: touchCordinate, latitudinalMeters: regionRadius, longitudinalMeters: regionRadius)
         map.setRegion(coordinateRegion, animated: true)
     }
@@ -87,7 +94,28 @@ class MapVC: UIViewController ,UIGestureRecognizerDelegate{
         for annotation in map.annotations {
             map.removeAnnotation(annotation)
         }}
+    
+    ///func to retive url
+    func retriveURLS(forAnnotation annotation :DropablePin , handler:@escaping (_ status:Bool)->()){
+        urlImage = []
+        Alamofire.request(getUrl(forApiKey: API_KEY, AndAnnotation: annotation, AndPageNumber: 40)).responseJSON { (response) in
+            guard let json = response.result.value as? Dictionary<String,AnyObject> else {return}
+            let photos = json["photos"] as? Dictionary<String,AnyObject>
+            let photoArray = photos!["photo"] as? [Dictionary<String,AnyObject>]
+            for item in photoArray!{
+                //http://farm8.staticflickr.com/7804/47459692401_274df06c59_z.jpg
+                let oneUrl = "https://farm\(item["farm"]!).staticflickr.com/\(item["server"]!)/\(item["id"]!)_\(item["secret"]!)_z.jpg"
+                self.urlImage.append(oneUrl)
+                handler(true)
+            }
+
+        }
+    }
+    
 }
+
+
+
 
 
 
