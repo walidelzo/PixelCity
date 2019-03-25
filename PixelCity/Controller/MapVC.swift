@@ -17,6 +17,7 @@ class MapVC: UIViewController ,UIGestureRecognizerDelegate{
     @IBOutlet weak var map: MKMapView!
     @IBOutlet weak var pulledView: UIView!
     @IBOutlet weak var pulledViewHeightConstraint: NSLayoutConstraint!
+    @IBOutlet weak var searchTXT:UITextField!
     let screenSize = UIScreen.main.bounds
     var spinner : UIActivityIndicatorView?
     var progressLabel:UILabel?
@@ -47,11 +48,14 @@ class MapVC: UIViewController ,UIGestureRecognizerDelegate{
         addPinTapGetsure()
         addSwipDownGesture()
         collectionV = UICollectionView(frame: CGRect(x: 0, y: 0, width: screenSize.width, height: screenSize.height), collectionViewLayout: flowlayout)
+        self.registerForPreviewing(with: self, sourceView: collectionV!)
         collectionV?.register(PhotoCell.self, forCellWithReuseIdentifier: "photoCell")
         collectionV?.delegate = self
         collectionV?.dataSource = self
        collectionV?.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
         pulledView.addSubview(collectionV!)
+        
+        
         
     }
     
@@ -73,6 +77,7 @@ class MapVC: UIViewController ,UIGestureRecognizerDelegate{
     
     //MARK:- add Pin to MapVC
     @objc func dropAPinToMap(sender:UITapGestureRecognizer){
+        Search_Text = searchTXT.text!
         removePin()
         removeSpinner()
         removeProgessLabel()
@@ -104,6 +109,7 @@ class MapVC: UIViewController ,UIGestureRecognizerDelegate{
         }
         let coordinateRegion = MKCoordinateRegion(center: touchCordinate, latitudinalMeters: regionRadius, longitudinalMeters: regionRadius)
         map.setRegion(coordinateRegion, animated: true)
+        //print()
     }
     
     func removePin(){
@@ -115,8 +121,11 @@ class MapVC: UIViewController ,UIGestureRecognizerDelegate{
     
     ///func to retive url
     func retriveURLS(forAnnotation annotation :DropablePin , handler:@escaping (_ status:Bool)->()){
-        Alamofire.request(getUrl(forApiKey: API_KEY, AndAnnotation: annotation, AndPageNumber: 40)).responseJSON { (response) in
+        let apiUrl = getUrl(forApiKey: API_KEY, AndAnnotation: annotation, AndPageNumber: 40)
+        print(apiUrl)
+        Alamofire.request(apiUrl).responseJSON { (response) in
             guard let json = response.result.value as? Dictionary<String,AnyObject> else {return}
+            print(json)
             let photos = json["photos"] as? Dictionary<String,AnyObject>
             let photoArray = photos!["photo"] as? [Dictionary<String,AnyObject>]
             for item in photoArray!{
@@ -124,6 +133,9 @@ class MapVC: UIViewController ,UIGestureRecognizerDelegate{
                 let oneUrl = "https://farm\(item["farm"]!).staticflickr.com/\(item["server"]!)/\(item["id"]!)_\(item["secret"]!)_z.jpg"
                 self.urlImages.append(oneUrl)
                 handler(true)
+                
+                    
+                
             }
 
         }
@@ -175,9 +187,13 @@ extension MapVC:MKMapViewDelegate{
     }
     
     
+    
     //this method to center the main view user
     func centerMapOnUserLocation(){
         guard let cordinate = locationManager.location?.coordinate else { return  }
+       //let cordinatee = CLLocationCoordinate2D(latitude: 37.7873589, longitude: -122.408227)
+       // print(cordinate)
+        //51.50998  ----  -0.1337
         let cordinatRegion = MKCoordinateRegion.init(center: cordinate, latitudinalMeters: regionRadius, longitudinalMeters: regionRadius)
         map.setRegion(cordinatRegion, animated: true)
         
@@ -249,7 +265,7 @@ extension MapVC:MKMapViewDelegate{
 
 
 
-
+//MARK:- Map Location manager
 extension MapVC:CLLocationManagerDelegate{
     func configureAuthServices(){
         if authStatus == .notDetermined
@@ -266,7 +282,7 @@ extension MapVC:CLLocationManagerDelegate{
     }
 }
 
-
+//MARK:- CollectionView Methods
 extension MapVC:UICollectionViewDelegate,UICollectionViewDataSource{
     
     func numberOfSections(in collectionView: UICollectionView) -> Int {
@@ -282,8 +298,29 @@ extension MapVC:UICollectionViewDelegate,UICollectionViewDataSource{
             return PhotoCell()
         }
         let imageToCell = UIImageView(image: imagesDownload[indexPath.row])
+       // imageToCell.contentMode = .scaleAspectFit
         cell.addSubview(imageToCell)
         return cell
     }
     
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        guard let popVc = storyboard?.instantiateViewController(withIdentifier: "PopVC") as? PopVC  else {
+            return
+        }
+        popVc.initData(image: imagesDownload[indexPath.row])
+        present(popVc, animated: true, completion: nil)
+    }
+    
+}
+
+extension MapVC:UIViewControllerPreviewingDelegate{
+    func previewingContext(_ previewingContext: UIViewControllerPreviewing, viewControllerForLocation location: CGPoint) -> UIViewController? {
+        guard let index = collectionV?.indexPathForItem(at: location) , let cell = collectionV?.cellForItem(at: index) else { return nil }
+        let popVc = storyboard?.instantiateViewController(withIdentifier: "PopVC")
+        previewingContext.sourceRect = cell.contentView.frame
+        return popVc
+    }
+    func previewingContext(_ previewingContext: UIViewControllerPreviewing, commit viewControllerToCommit: UIViewController) {
+        show(viewControllerToCommit,sender: self)
+    }
 }
