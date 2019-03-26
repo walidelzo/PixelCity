@@ -8,17 +8,31 @@
 
 import UIKit
 
-class PopVC: UIViewController {
+class PopVC: UIViewController ,UIScrollViewDelegate {
 
     @IBOutlet weak var popImage: UIImageView!
+    
+    @IBOutlet weak var scr: UIScrollView!
+    @IBOutlet weak var imageTile: UILabel!
     var passedImage:UIImage?
-    func initData(image:UIImage){
+    var passImageTitle:String?
+    func initData(image:UIImage,ImageTitle:String){
          passedImage = image
+        passImageTitle = ImageTitle
     }
     override func viewDidLoad() {
         super.viewDidLoad()
         popImage.image = passedImage
+        imageTile.text = passImageTitle
         addDoubleClick()
+        scr.delegate = self
+        scr.minimumZoomScale = 0.5
+        scr.maximumZoomScale = 5
+        
+    }
+    
+    func viewForZooming(in scrollView: UIScrollView) -> UIView? {
+        return popImage
     }
     
     func addDoubleClick(){

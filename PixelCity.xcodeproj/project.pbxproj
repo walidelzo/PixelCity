@@ -15,6 +15,7 @@
 		840FAD8F2244C358005F9EAA /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 840FAD8D2244C358005F9EAA /* Main.storyboard */; };
 		840FAD912244C35B005F9EAA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 840FAD902244C35B005F9EAA /* Assets.xcassets */; };
 		840FAD942244C35B005F9EAA /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 840FAD922244C35B005F9EAA /* LaunchScreen.storyboard */; };
+		849B7DE3224A537100273395 /* roundButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 849B7DE2224A537100273395 /* roundButton.swift */; };
 		84A9901322467DAB00C47C9E /* DropablePin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84A9901222467DAB00C47C9E /* DropablePin.swift */; };
 		84C02D122247F78B00A19452 /* PhotoCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84C02D112247F78B00A19452 /* PhotoCell.swift */; };
 /* End PBXBuildFile section */
@@ -31,6 +32,7 @@
 		840FAD902244C35B005F9EAA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		840FAD932244C35B005F9EAA /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		840FAD952244C35B005F9EAA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		849B7DE2224A537100273395 /* roundButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = roundButton.swift; sourceTree = "<group>"; };
 		84A9901222467DAB00C47C9E /* DropablePin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DropablePin.swift; sourceTree = "<group>"; };
 		84C02D112247F78B00A19452 /* PhotoCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoCell.swift; sourceTree = "<group>"; };
 		8BBFB5D1209F570941D3A7D8 /* Pods-PixelCity.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PixelCity.debug.xcconfig"; path = "Target Support Files/Pods-PixelCity/Pods-PixelCity.debug.xcconfig"; sourceTree = "<group>"; };
@@ -105,6 +107,7 @@
 			children = (
 				84A9901222467DAB00C47C9E /* DropablePin.swift */,
 				84C02D112247F78B00A19452 /* PhotoCell.swift */,
+				849B7DE2224A537100273395 /* roundButton.swift */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -266,6 +269,7 @@
 				840EB2092248CEC8008C28A3 /* Constants.swift in Sources */,
 				84C02D122247F78B00A19452 /* PhotoCell.swift in Sources */,
 				840FAD8C2244C358005F9EAA /* MapVC.swift in Sources */,
+				849B7DE3224A537100273395 /* roundButton.swift in Sources */,
 				84A9901322467DAB00C47C9E /* DropablePin.swift in Sources */,
 				840FAD8A2244C358005F9EAA /* AppDelegate.swift in Sources */,
 			);

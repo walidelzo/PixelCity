@@ -18,6 +18,12 @@ class MapVC: UIViewController ,UIGestureRecognizerDelegate{
     @IBOutlet weak var pulledView: UIView!
     @IBOutlet weak var pulledViewHeightConstraint: NSLayoutConstraint!
     @IBOutlet weak var searchTXT:UITextField!
+    @IBOutlet weak var perPageTXT:UITextField!
+    
+    @IBAction func closePulUpView( _ sender:UIButton){
+        pullDownPhotoView()
+
+    }
     let screenSize = UIScreen.main.bounds
     var spinner : UIActivityIndicatorView?
     var progressLabel:UILabel?
@@ -25,23 +31,26 @@ class MapVC: UIViewController ,UIGestureRecognizerDelegate{
     var flowlayout = UICollectionViewFlowLayout()
     var urlImages = [String]()
     var imagesDownload = [UIImage]()
+    var imagesTiles = [String]()
     
     //MARK:- IBActions
     @IBAction func locationBtnPressed(_ sender:Any){
         if authStatus == .authorizedAlways || authStatus == .authorizedWhenInUse{
             centerMapOnUserLocation()
+            pullDownPhotoView()
         }
     }
     
     //MARK:-  core location manager
     var locationManager = CLLocationManager()
     let authStatus = CLLocationManager.authorizationStatus()
-    let regionRadius :Double = 2000
+    let regionRadius :Double = 3000
     
     //MARK:- View method
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        print(perPage)
         map.delegate = self
         locationManager.delegate = self
         configureAuthServices()
@@ -52,9 +61,10 @@ class MapVC: UIViewController ,UIGestureRecognizerDelegate{
         collectionV?.register(PhotoCell.self, forCellWithReuseIdentifier: "photoCell")
         collectionV?.delegate = self
         collectionV?.dataSource = self
-       collectionV?.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+        collectionV?.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
+       // collectionV?.scrollsToTop = true
         pulledView.addSubview(collectionV!)
-        
+        dismissKeyboard()
         
         
     }
@@ -73,10 +83,18 @@ class MapVC: UIViewController ,UIGestureRecognizerDelegate{
         pulledView.addGestureRecognizer(swipDwonGes)
     }
     
+    func dismissKeyboard(){
+        let gestt = UITapGestureRecognizer(target: self, action: #selector(EndEditing))
+        map.addGestureRecognizer(gestt)
+    }
+    @objc func EndEditing(){
+        self.view.endEditing(true)
+    }
     
     
     //MARK:- add Pin to MapVC
     @objc func dropAPinToMap(sender:UITapGestureRecognizer){
+       // print(api)
         Search_Text = searchTXT.text!
         removePin()
         removeSpinner()
@@ -117,20 +135,21 @@ class MapVC: UIViewController ,UIGestureRecognizerDelegate{
             map.removeAnnotation(annotation)
         }}
     
-    ///MARK:-Work with Alamofire
+    //MARK:- Work with Alamofire
     
-    ///func to retive url
     func retriveURLS(forAnnotation annotation :DropablePin , handler:@escaping (_ status:Bool)->()){
-        let apiUrl = getUrl(forApiKey: API_KEY, AndAnnotation: annotation, AndPageNumber: 40)
+        if  perPageTXT.text == "" { perPage = "40" }else {perPage = (perPageTXT.text)!}
+        let apiUrl = getUrl(forApiKey: API_KEY, AndAnnotation: annotation, AndPageNumber:perPage)
         print(apiUrl)
         Alamofire.request(apiUrl).responseJSON { (response) in
-            guard let json = response.result.value as? Dictionary<String,AnyObject> else {return}
+            guard let json = response.result.value as? Dictionary<String,AnyObject> else { self.progressLabel!.text = "NO RESULT " ;         self.view.layoutIfNeeded() ;return}
             print(json)
             let photos = json["photos"] as? Dictionary<String,AnyObject>
             let photoArray = photos!["photo"] as? [Dictionary<String,AnyObject>]
             for item in photoArray!{
                 //http://farm8.staticflickr.com/7804/47459692401_274df06c59_z.jpg
                 let oneUrl = "https://farm\(item["farm"]!).staticflickr.com/\(item["server"]!)/\(item["id"]!)_\(item["secret"]!)_z.jpg"
+                self.imagesTiles.append(item["title"]! as! String)
                 self.urlImages.append(oneUrl)
                 handler(true)
                 
@@ -147,7 +166,7 @@ class MapVC: UIViewController ,UIGestureRecognizerDelegate{
             Alamofire.request(urlImage).responseImage { (response) in
                 guard let image = response.result.value else {return }
                 self.imagesDownload.append(image)
-                self.progressLabel?.text = "\(self.imagesDownload.count)/40 images Downloaded"
+                self.progressLabel?.text = "\(self.imagesDownload.count)/\(perPage) images Downloaded"
 
                 if self.imagesDownload.count == self.urlImages.count {
                     handler(true)
@@ -191,10 +210,10 @@ extension MapVC:MKMapViewDelegate{
     //this method to center the main view user
     func centerMapOnUserLocation(){
         guard let cordinate = locationManager.location?.coordinate else { return  }
-       //let cordinatee = CLLocationCoordinate2D(latitude: 37.7873589, longitude: -122.408227)
+       let cordinatee = CLLocationCoordinate2D(latitude: 37.7873589, longitude: -122.408227)
        // print(cordinate)
         //51.50998  ----  -0.1337
-        let cordinatRegion = MKCoordinateRegion.init(center: cordinate, latitudinalMeters: regionRadius, longitudinalMeters: regionRadius)
+        let cordinatRegion = MKCoordinateRegion.init(center: cordinatee, latitudinalMeters: regionRadius, longitudinalMeters: regionRadius)
         map.setRegion(cordinatRegion, animated: true)
         
     }
@@ -203,7 +222,7 @@ extension MapVC:MKMapViewDelegate{
     
     //function to pullview
     func pullUPPhotoView(){
-        pulledViewHeightConstraint.constant = (screenSize.height / 2.5)
+        pulledViewHeightConstraint.constant = (screenSize.height / 1.5)
         UIView.animate(withDuration: 0.3) {
             self.view.layoutIfNeeded()
 
@@ -243,10 +262,10 @@ extension MapVC:MKMapViewDelegate{
     func addProgressBarLabel(){
         let x : CGFloat = (screenSize.width / 2) - 25
         let y :CGFloat = (screenSize.height / 2.5) / 2
-        progressLabel = UILabel(frame: CGRect(x: x - 25 , y: y, width: x, height: y + 5 ))
+        progressLabel = UILabel(frame: CGRect(x: x - 25 , y: y, width: 200, height: y + 5 ))
         progressLabel?.center = CGPoint(x:x,y:y + 30)
         progressLabel?.textAlignment = .center
-        progressLabel?.font = UIFont(name: "Avera Next", size: 22)
+        progressLabel?.font = UIFont(name: "Avera Next", size: 15)
         progressLabel?.text = ""
         collectionV?.addSubview(progressLabel!)
     }
@@ -283,7 +302,7 @@ extension MapVC:CLLocationManagerDelegate{
 }
 
 //MARK:- CollectionView Methods
-extension MapVC:UICollectionViewDelegate,UICollectionViewDataSource{
+extension MapVC:UICollectionViewDelegate,UICollectionViewDataSource,UICollectionViewDelegateFlowLayout{
     
     func numberOfSections(in collectionView: UICollectionView) -> Int {
             return 1
@@ -297,9 +316,12 @@ extension MapVC:UICollectionViewDelegate,UICollectionViewDataSource{
         guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "photoCell", for: indexPath) as? PhotoCell else {
             return PhotoCell()
         }
-        let imageToCell = UIImageView(image: imagesDownload[indexPath.row])
-       // imageToCell.contentMode = .scaleAspectFit
-        cell.addSubview(imageToCell)
+        if imagesDownload.count > 0{
+            let imageToCell = UIImageView(image: imagesDownload[indexPath.row])
+            cell.addSubview(imageToCell)
+            // imageToCell.contentMode = .scaleAspectFit
+
+        }
         return cell
     }
     
@@ -307,8 +329,13 @@ extension MapVC:UICollectionViewDelegate,UICollectionViewDataSource{
         guard let popVc = storyboard?.instantiateViewController(withIdentifier: "PopVC") as? PopVC  else {
             return
         }
-        popVc.initData(image: imagesDownload[indexPath.row])
+        popVc.initData(image: imagesDownload[indexPath.row],ImageTitle: imagesTiles[indexPath.row])
         present(popVc, animated: true, completion: nil)
+    }
+    
+    
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+        return CGSize(width: 50, height: 50)
     }
     
 }
