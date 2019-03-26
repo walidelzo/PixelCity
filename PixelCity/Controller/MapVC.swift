@@ -44,7 +44,7 @@ class MapVC: UIViewController ,UIGestureRecognizerDelegate{
     //MARK:-  core location manager
     var locationManager = CLLocationManager()
     let authStatus = CLLocationManager.authorizationStatus()
-    let regionRadius :Double = 3000
+    let regionRadius :Double = 5000
     
     //MARK:- View method
     
@@ -112,7 +112,11 @@ class MapVC: UIViewController ,UIGestureRecognizerDelegate{
         let annotation = DropablePin(coordinate: touchCordinate, identifier: "dropAnotation")
         map.addAnnotation(annotation)
         
-        retriveURLS(forAnnotation: annotation) { (finshed) in
+        let coordinateRegion = MKCoordinateRegion(center: touchCordinate, latitudinalMeters: regionRadius, longitudinalMeters: regionRadius)
+        map.setRegion(coordinateRegion, animated: true)
+        
+      
+        self.retriveURLS(forAnnotation: annotation) { (finshed) in
             if (finshed)
             {
                 self.retriveImages(handler: { (finshed) in
@@ -125,9 +129,10 @@ class MapVC: UIViewController ,UIGestureRecognizerDelegate{
             }
             
         }
-        let coordinateRegion = MKCoordinateRegion(center: touchCordinate, latitudinalMeters: regionRadius, longitudinalMeters: regionRadius)
-        map.setRegion(coordinateRegion, animated: true)
-        //print()
+        
+        
+        
+        
     }
     
     func removePin(){
@@ -141,11 +146,15 @@ class MapVC: UIViewController ,UIGestureRecognizerDelegate{
         if  perPageTXT.text == "" { perPage = "40" }else {perPage = (perPageTXT.text)!}
         let apiUrl = getUrl(forApiKey: API_KEY, AndAnnotation: annotation, AndPageNumber:perPage)
         print(apiUrl)
+        
+        
         Alamofire.request(apiUrl).responseJSON { (response) in
-            guard let json = response.result.value as? Dictionary<String,AnyObject> else { self.progressLabel!.text = "NO RESULT " ;         self.view.layoutIfNeeded() ;return}
+            guard let json = response.result.value as? Dictionary<String,AnyObject> else {return}
             print(json)
             let photos = json["photos"] as? Dictionary<String,AnyObject>
             let photoArray = photos!["photo"] as? [Dictionary<String,AnyObject>]
+           if photoArray!.count == 0
+           { self.progressLabel!.text = "NO RESULT "; self.AddAlertMessage(WithTitle: "No Result", AndAction: "OK");self.pullDownPhotoView() ;return }
             for item in photoArray!{
                 //http://farm8.staticflickr.com/7804/47459692401_274df06c59_z.jpg
                 let oneUrl = "https://farm\(item["farm"]!).staticflickr.com/\(item["server"]!)/\(item["id"]!)_\(item["secret"]!)_z.jpg"
@@ -162,18 +171,28 @@ class MapVC: UIViewController ,UIGestureRecognizerDelegate{
     
     
     func retriveImages(handler:@escaping (_ status:Bool)->() ){
-        for urlImage in urlImages{
+        print("\(urlImages.count)--------------........")
+        DispatchQueue.main.async {
+        for urlImage in self.urlImages{
             Alamofire.request(urlImage).responseImage { (response) in
+               if response.result.error == nil
+               {
                 guard let image = response.result.value else {return }
                 self.imagesDownload.append(image)
                 self.progressLabel?.text = "\(self.imagesDownload.count)/\(perPage) images Downloaded"
 
                 if self.imagesDownload.count == self.urlImages.count {
                     handler(true)
+                    return
+                }
+               }else{
+                debugPrint(response.result.error as Any)
+                handler(false)
                 }
             }
         }
-        
+    }
+
     }
     
     func CancellAllSession()
@@ -210,10 +229,10 @@ extension MapVC:MKMapViewDelegate{
     //this method to center the main view user
     func centerMapOnUserLocation(){
         guard let cordinate = locationManager.location?.coordinate else { return  }
-       let cordinatee = CLLocationCoordinate2D(latitude: 37.7873589, longitude: -122.408227)
+       //let cordinatee = CLLocationCoordinate2D(latitude: 37.7873589, longitude: -122.408227)
        // print(cordinate)
         //51.50998  ----  -0.1337
-        let cordinatRegion = MKCoordinateRegion.init(center: cordinatee, latitudinalMeters: regionRadius, longitudinalMeters: regionRadius)
+        let cordinatRegion = MKCoordinateRegion.init(center: cordinate, latitudinalMeters: regionRadius, longitudinalMeters: regionRadius)
         map.setRegion(cordinatRegion, animated: true)
         
     }
@@ -222,7 +241,7 @@ extension MapVC:MKMapViewDelegate{
     
     //function to pullview
     func pullUPPhotoView(){
-        pulledViewHeightConstraint.constant = (screenSize.height / 1.5)
+        pulledViewHeightConstraint.constant = (screenSize.height / 2.3)
         UIView.animate(withDuration: 0.3) {
             self.view.layoutIfNeeded()
 
@@ -275,6 +294,14 @@ extension MapVC:MKMapViewDelegate{
         }
     }
     
+    func AddAlertMessage(WithTitle title :String , AndAction Action:String){
+        
+        let alert = UIAlertController(title: "Alert", message: title, preferredStyle: .alert)
+        let action = UIAlertAction(title: Action, style: .default, handler: nil)
+        alert.addAction(action)
+        self.present(alert, animated: true, completion: nil)
+    }
+    
 }
 
 
@@ -318,8 +345,9 @@ extension MapVC:UICollectionViewDelegate,UICollectionViewDataSource,UICollection
         }
         if imagesDownload.count > 0{
             let imageToCell = UIImageView(image: imagesDownload[indexPath.row])
+            imageToCell.frame(forAlignmentRect: CGRect(x: 0, y: 0, width: 80, height: 80))
+            imageToCell.contentMode = .scaleAspectFill
             cell.addSubview(imageToCell)
-            // imageToCell.contentMode = .scaleAspectFit
 
         }
         return cell
@@ -335,7 +363,19 @@ extension MapVC:UICollectionViewDelegate,UICollectionViewDataSource,UICollection
     
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        return CGSize(width: 50, height: 50)
+
+        var numberOfcolumn :CGFloat = 3
+        if (UIScreen.main.bounds.width > 320 ){
+            numberOfcolumn  = 4
+        }
+        let spaceBetweenCell :CGFloat = 10
+        let padding :CGFloat = 40
+        
+        
+        let cellDimension = ((collectionView.bounds.width - padding)  - (numberOfcolumn - 1) * spaceBetweenCell) / numberOfcolumn
+        return CGSize(width: cellDimension, height: cellDimension)
+
+
     }
     
 }
